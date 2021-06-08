@@ -27,55 +27,46 @@
 /// THE SOFTWARE.
 
 import XCTest
-@testable import BullsEye
 
-class BullsEyeTests: XCTestCase {
-  //System Under Test
-  var sut: BullsEyeGame!
+var app: XCUIApplication!
+
+class BullsEyeUITests: XCTestCase {
 
     override func setUpWithError() throws {
       try super.setUpWithError()
-      sut = BullsEyeGame()
+      continueAfterFailure = false
+      app = XCUIApplication()
+      app.launch()
     }
 
-    override func tearDownWithError() throws {
-      sut = nil
-      try super.tearDownWithError()
-    }
-  
-  func testScoreIsComputedWhenGuessIsHigherThanTarget(){
-    //give - Set Data o load Data
-    let guess = sut.targetValue + 5
-    
-    //when - Call Action
-    sut.check(guess: guess)
-    
-    //then - assert the result
-    XCTAssertEqual(sut.scoreRound, 95, "Score computed from guess is wrong")
-  }
-  
-  func testScoreIsComputedWhenGuessIsLowerThanTarget() {
-    // given
-    let guess = sut.targetValue - 5
+    func testGameStyleSwitch() throws {
+      let app = XCUIApplication()
+      app.buttons["Slide"].tap()
+      app.staticTexts["Get as close as you can to: "].tap()
+      
+      app.segmentedControls.buttons["Slide"]
+      app.staticTexts["Get as close as you can to: "]
+      // given
+      let slideButton = app.segmentedControls.buttons["Slide"]
+      let typeButton = app.segmentedControls.buttons["Type"]
+      let slideLabel = app.staticTexts["Get as close as you can to: "]
+      let typeLabel = app.staticTexts["Guess where the slider is: "]
+      
+        // then
+        if slideButton.isSelected {
+          XCTAssertTrue(slideLabel.exists)
+          XCTAssertFalse(typeLabel.exists)
 
-    // when
-    sut.check(guess: guess)
+          typeButton.tap()
+          XCTAssertTrue(typeLabel.exists)
+          XCTAssertFalse(slideLabel.exists)
+        } else if typeButton.isSelected {
+          XCTAssertTrue(typeLabel.exists)
+          XCTAssertFalse(slideLabel.exists)
 
-    // then
-    XCTAssertEqual(sut.scoreRound, 95, "Score computed from guess is wrong")
+          slideButton.tap()
+          XCTAssertTrue(slideLabel.exists)
+          XCTAssertFalse(typeLabel.exists)
+        }
   }
-  
-  func testScoreIsComputedPerformance() {
-    measure(
-      metrics: [
-        XCTClockMetric(),
-        XCTCPUMetric(),
-        XCTStorageMetric(),
-        XCTMemoryMetric()
-      ]
-    ) {
-      sut.check(guess: 100)
-    }
-  }
-
 }
