@@ -1,15 +1,15 @@
 /// Copyright (c) 2021 Razeware LLC
-///
+/// 
 /// Permission is hereby granted, free of charge, to any person obtaining a copy
 /// of this software and associated documentation files (the "Software"), to deal
 /// in the Software without restriction, including without limitation the rights
 /// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 /// copies of the Software, and to permit persons to whom the Software is
 /// furnished to do so, subject to the following conditions:
-///
+/// 
 /// The above copyright notice and this permission notice shall be included in
 /// all copies or substantial portions of the Software.
-///
+/// 
 /// Notwithstanding the foregoing, you may not use, copy, modify, merge, publish,
 /// distribute, sublicense, create a derivative work, and/or sell copies of the
 /// Software in any work that is designed, intended, or marketed for pedagogical or
@@ -17,11 +17,7 @@
 /// or information technology.  Permission for such use, copying, modification,
 /// merger, publication, distribution, sublicensing, creation of derivative works,
 /// or sale is expressly withheld.
-///
-/// This project and source code may use libraries or frameworks that are
-/// released under various Open-Source licenses. Use of those libraries and
-/// frameworks are governed by their own individual licenses.
-///
+/// 
 /// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 /// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 /// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -30,63 +26,59 @@
 /// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 /// THE SOFTWARE.
 
-import Foundation
+import XCTest
+@testable import BullsEye
 
-class BullsEyeGame {
-  var round = 0
-  let startValue = 50
-  var targetValue = 50
-  var scoreRound = 0
-  var scoreTotal = 0
-
-  var urlSession: URLSessionProtocol = URLSession.shared
-
-  init() {
-    startNewGame()
-  }
-
-  func startNewGame() {
-    round = 1
-    scoreTotal = 0
-  }
-
-  func startNewRound(completion: @escaping () -> Void) {
-    round += 1
-    scoreRound = 0
-    getRandomNumber { newTarget in
-      self.targetValue = newTarget
-      DispatchQueue.main.async {
-        completion()
-      }
+class MockUserDefaults: UserDefaults {
+  var gameStyleChanged = 0
+  override func set(_ value: Int, forKey defaultName: String) {
+    if defaultName == "gameStyle" {
+      gameStyleChanged += 1
     }
   }
+}
 
-  @discardableResult
-  func check(guess: Int) -> Int {
-    let difference = abs(targetValue - guess)
-    scoreRound = 100 - difference
-    scoreTotal += scoreRound
-    return difference
+class BullsEyeMockTests: XCTestCase {
+  
+  var sut: ViewController!
+  var mockUserDefaults: MockUserDefaults!
+
+  override func setUpWithError() throws {
+    try super.setUpWithError()
+    sut = UIStoryboard(name: "Main", bundle: nil)
+      .instantiateInitialViewController() as? ViewController
+    mockUserDefaults = MockUserDefaults(suiteName: "testing")
+    sut.defaults = mockUserDefaults
   }
 
-  func getRandomNumber(completion: @escaping (Int) -> Void) {
-    guard let url = URL(string: "http://www.randomnumberapi.com/api/v1.0/random?min=0&max=100&count=1") else {
-      return
-    }
-    let task = urlSession.dataTask(with: url) { data, _, error in
-      do {
-        guard
-          let data = data,
-          error == nil,
-          let newTarget = try JSONDecoder().decode([Int].self, from: data).first
-        else {
-          return
-        }
-        completion(newTarget)
-      } catch {
-        print("Decoding of random numbers failed.")
-      }
-    }
-    task.resume()
+  override func tearDownWithError() throws {
+    sut = nil
+    mockUserDefaults = nil
+    try super.tearDownWithError()
   }
+
+  func testGameStyleCanBeChanged() {
+    // given
+    let segmentedControl = UISegmentedControl()
+
+    // when
+    XCTAssertEqual(
+      mockUserDefaults.gameStyleChanged,
+      0,
+      "gameStyleChanged should be 0 before sendActions")
+    
+    segmentedControl.addTarget(
+      sut,
+      action: #selector(ViewController.chooseGameStyle(_:)),
+      for: .valueChanged)
+    
+    segmentedControl.sendActions(for: .valueChanged)
+
+    // then
+    XCTAssertEqual(
+      mockUserDefaults.gameStyleChanged,
+      1,
+      "gameStyle user default wasn't changed")
+  }
+  
 }
